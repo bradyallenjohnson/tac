@@ -1,8 +1,8 @@
 import os
 import sys
 
-# for now, set it to 1 MB
-SIMPLE_FILESIZE_LIMIT = 1024*1024
+SIMPLE_FILESIZE_LIMIT = 1024*1024 # for now, set it to 1 MB
+CHUNK_SIZE = 1024 # 1 KB chunks by default
 
 def print_usage():
     print "Usage: tac [-cs chunk size] <filename>"
@@ -10,11 +10,18 @@ def print_usage():
 def tac_complex(fname):
     # TODO not implemented yet
     print "ERROR the complex way of doing tac hasnt been implemented yet"
+    # handling files using 'with' will ensure its always properly closed
+    with open(fname, 'r') as f:
+        # 0 from beginning, 1 from current position, 2 from the end of the file
+        f.seek(CHUNK_SIZE, 2) # 2 means from the end of the file
+        read_data = f.read(CHUNK_SIZE)
+	# f.tell() returns position in bytes from beginning of file
 
 # this is a simpler way to do it for smaller files
 def tac_simple(fname):
     contents = []
 
+    # handling files using 'with' will ensure its always properly closed
     with open(fname) as f:
         contents = f.readlines()
 
