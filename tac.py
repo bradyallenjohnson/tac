@@ -1,27 +1,26 @@
 import os
 import sys
+import argparse
 
-SIMPLE_FILESIZE_LIMIT = 1024*1024 # for now, set it to 1 MB
-CHUNK_SIZE = 1024 # 1 KB chunks by default
 
-def print_usage():
-    print "Usage: tac [-cs chunk size] <filename>"
+DEFAULT_SIMPLE_FILESIZE_LIMIT = 1024*1024 # for now, set it to 1 MB
+DEFAULT_CHUNK_SIZE = 1024 # 1 KB chunks by default
 
 #
 # this is a more complex way that will be more eficient for larger files
 #
-def tac_complex(fname, fsize):
+def tac_complex(fname, fsize, chunk_size):
     # handling files using 'with' will ensure its always properly closed
     with open(fname, 'r') as f:
         # Iterate backwards through the file
-        for i in range(1, fsize/CHUNK_SIZE):
+        for i in range(1, fsize/chunk_size):
             # Set the position in the file to read from
             # 0 from beginning, 1 from current position, 2 from the end of the file
-            f.seek(CHUNK_SIZE*i, 2)
+            f.seek(chunk_size*i, 2)
 
-            read_data = f.read(CHUNK_SIZE)
+            read_data = f.read(chunk_size)
             #str.rfind(str, beg=0 end=len(read_data))
-	    # TODO what if a line is longer than a CHUNK_SIZE??
+        # TODO what if a line is longer than a chunk_size??
 
 
         # Check if there are a few bytes left
@@ -44,30 +43,38 @@ def tac_simple(fname, fsize):
     for line in reversed(contents):
         sys.stdout.write(line)
 
-def tac(fname):
+def tac(fname, chunk_size, simple_limit):
     statinfo = os.stat(fname)
-    if statinfo.st_size < SIMPLE_FILESIZE_LIMIT:
+    if statinfo.st_size < simple_limit:
         tac_simple(fname, statinfo.st_size)
     else:
-        tac_complex(fname, statinfo.st_size)
+        tac_complex(fname, statinfo.st_size, chunk_size)
 
 def main():
-    if len(sys.argv) < 2:
-        print "ERROR, too few cmd line args"
-        print_usage
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='Display the lines of a file in reverse order.')
+    parser.add_argument('filename',
+                        action='store',
+                        type=str,
+                        help='the path of the file to display in reverse order')
+    parser.add_argument('-cs',
+                        dest='chunk_size',
+                        action='store',
+                        metavar='bytes',
+                        type=int,
+                        default=DEFAULT_CHUNK_SIZE,
+                        help='chunk size')
+    parser.add_argument('-sl',
+                        dest='simple_limit',
+                        action='store',
+                        metavar='file size in bytes',
+                        type=int,
+                        default=DEFAULT_CHUNK_SIZE,
+                        help='simple file size limit, smaller file sizes will read in all lines')
 
-    if sys.argv[1] == '-h':
-        print_usage
-        sys.exit(0)
+    args = parser.parse_args()
+    #print args
 
-    # TODO chunk-size not supported yet, need to incorporate getopt
-    if len(sys.argv) != 2:
-        print "ERROR, chunk size not supported yet"
-        sys.exit(1)
-
-    #print "Filename is %s" % sys.argv[1]
-    tac(sys.argv[1])
+    tac(args.filename, args.chunk_size, args.simple_limit)
 
 if __name__ == "__main__":
     main()
